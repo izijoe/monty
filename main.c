@@ -1,44 +1,126 @@
 #include "monty.h"
+
+/* Initialize the global variable */
+int token = 1;
+
 /**
- * main - monty code interpreter
+ * main - Interprets bytecode
  * @argc: number of arguments
- * @argv: monty file location
+ * @argv: array of arguments
  * Return: 0 on success
  */
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
-	char *content;
+	const char *filename;
+	char *string = NULL, *opcode, *num_str;
+	size_t nbytes = 1;
 	FILE *file;
-	size_t size = 0;
-	ssize_t read_lines = 1;
-	stack_t *stack = NULL;
-	unsigned int counter = 0;
+	unsigned int line_num = 0, i = 0;
+	ssize_t read_c = 0;
+	stack_t *stack;
 
+	stack = NULL;
 	if (argc != 2)
 	{
 		fprintf(stderr, "USAGE: monty file\n");
 		exit(EXIT_FAILURE);
 	}
-	file = fopen(argv[1], "r");
-	bus.file = file;
-	if (!file)
+
+	filename = argv[1];
+
+	/* Open File with the bytecodes */
+	file = fopen(filename, "r");
+	if (file == NULL)
 	{
-		fprintf(stderr, "Error: Can't open file %s\n", argv[1]);
+		fprintf(stderr, "Error: Can't open file %s\n", filename);
 		exit(EXIT_FAILURE);
 	}
-	while (read_line > 0)
+
+	/* Read file line by line */
+	while (read_c != EOF)
 	{
-		content = NULL;
-		read_line = getline(&content, &size, file);
-		bus.content = content;
-		counter++;
-		if (read_line > 0)
+		token = 1;
+		i = 0;
+		if (string != NULL)
+			free(string);
+		string = NULL;
+
+		read_c = getline(&string, &nbytes, file);
+
+		if (read_c == -1)
 		{
-			execute(content, &stack, counter, file);
+			free(string);
+			if (stack != NULL)
+				free_stack(&stack);
+			fclose(file);
+			return (0);
 		}
-		free(content);
+
+		/* Keep count of the number of lines */
+		line_num++;
+
+		/* Continue if line or string is NULL */
+		if (read_c == 0)
+			continue;
+
+		/* Continue if line had only the new line character */
+		if (read_c == 1)
+			continue;
+
+		/* Parse the first elements of the line */
+		opcode = strtok(string, " \n");
+
+		/* If string is empty, let's continue */
+		if (opcode == NULL)
+			continue;
+
+		if (opcode[0] == '#')
+		{
+			nop(&stack, line_num);
+			continue;
+		}
+
+		/* Check whether the first token is the opcode 'push' */
+		if (strcmp(opcode, "push") == 0)
+		{
+			num_str = strtok(NULL, " \n");
+
+			/* Check if token is a digit or NULL */
+			if (num_str == NULL)
+			{
+				fprintf(stderr, "L%d: usage: push integer\n",
+					line_num);
+				free(string);
+				free_stack(&stack);
+				fclose(file);
+				exit(EXIT_FAILURE);
+			}
+
+			if (num_str[0] == '-' && num_str[1] != '\0')
+				i = 1;
+			/* Make sure string isn't garbage */
+			for (; num_str[i] != '\0'; i++)
+			{
+				if (isdigit(num_str[i]) == 0)
+				{
+					fprintf(stderr,
+						"L%d: usage: push integer\n",
+						line_num);
+					free(string);
+					free_stack(&stack);
+					fclose(file);
+					exit(EXIT_FAILURE);
+				}
+			}
+
+			token = atoi(num_str);
+		}
+		op_func(opcode, &stack, line_num)(&stack, line_num);
 	}
-	free_stack(stack);
+	/* Free memory and close the file */
+	free(string);
+	free_stack(&stack);
 	fclose(file);
-return (0);
+
+	return (0);
 }
