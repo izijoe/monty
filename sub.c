@@ -1,29 +1,32 @@
 #include "monty.h"
-/**
- * f_sub - sustration
- * @head: stack head
- * @counter: line_number
- * Return: no return
- */
-void f_sub(stack_t **head, unsigned int counter)
-{
-	stack_t *aux;
-	int sus, nodes;
 
-	aux = *head;
-	for (nodes = 0; aux != NULL; nodes++)
-		aux = aux->next;
-	if (nodes < 2)
+/**
+ * sub - This function subtracts the top two nodes of the stack, stores it in
+ * the second node, and pops off the top node
+ * @stack: The stack list
+ * @line_number: The line number of the file
+ * Return: The edited stack
+ */
+
+stack_t *sub(stack_t **stack, unsigned int line_number)
+{
+	int diff = 0;
+	stack_t *head = *stack;
+
+	/* Check if stack is NULL */
+	if (!head || !head->next)
 	{
-		fprintf(stderr, "L%d: can't sub, stack too short\n", counter);
-		fclose(bus.file);
-		free(bus.content);
-		free_stack(*head);
+		/* Print error, free, and exit */
+		fprintf(stderr, "L%d: can't sub, stack too short\n",
+line_number);
+		free_stack(stack);
 		exit(EXIT_FAILURE);
 	}
-	aux = *head;
-	sus = aux->next->n - aux->n;
-	aux->next->n = sus;
-	*head = aux->next;
-	free(aux);
+
+	/* Sum first two nodes, and store it in second node */
+	diff = (head->next->n) - (head->n);
+	head->next->n = diff;
+	pop(stack, 0);
+
+	return (*stack);
 }
